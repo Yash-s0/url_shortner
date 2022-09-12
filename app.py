@@ -1,7 +1,7 @@
 from enum import unique
 from flask import Flask
 from flask_restful import Api, request
-from sqlalchemy import create_engine, Column, Integer, String, inspect, Table, MetaData
+from sqlalchemy import create_engine, Column, Integer, String, inspect
 from sqlalchemy.orm import sessionmaker
 from passlib.hash import sha256_crypt
 from sqlalchemy.ext.declarative import as_declarative, declared_attr
@@ -12,7 +12,6 @@ import requests
 
 app = Flask(__name__)
 api = Api(app)
-meta = MetaData()
 SECRET_KEY = "yashsecret"
 
 dbEngine = create_engine("sqlite:///data.db")
@@ -21,7 +20,7 @@ Session = sessionmaker(bind=dbEngine)
 
 def encode_auth_token(user_id):
     payload = {
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(days=0, minutes=5),
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(days=0, minutes=15),
         "iat": datetime.datetime.utcnow(),
         "sub": user_id,
     }
@@ -54,12 +53,14 @@ class User(Base):
     username = Column(String(200), unique=True, nullable=False)
     password = Column(String(200), unique=False, nullable=False)
 
-    # __tablename__ = "urldata"
-    # id = Column(Integer, unique=True, primary_key=True)
-    # username = Column(String(200), unique=True, nullable=False)
-    # shorturl = Column(String(400), unique=True, nullable=False)
-    # originalurl = Column(String(700), unique=True, nullable=False)
-    # date = Column(String(100), unique=True, nullable=False)
+
+class UrlData(Base):
+    __tablename__ = "urldata"
+    id = Column(Integer, unique=True, primary_key=True)
+    username = Column(String(200), unique=False, nullable=False)
+    shorturl = Column(String(400))
+    originalurl = Column(String(700))
+    date = Column(String(100))
 
 
 @app.get("/new-user")
@@ -129,17 +130,54 @@ def user_info():
 
 @app.route("/shorten-url")
 def get_data():
+
+    # AUTHENTICATE USER
+    token = request.headers.get("Authorization")
+    if token is None:
+        return {"success": False, "message": "Session expried, please login"}, 404
+
+    bearer_token = token.split("Bearer ")[1]
+    verify = decode_auth_token(bearer_token)
+    if "success" in verify and verify["success"] is False:
+        return verify
+
+    db = Session()
+    user = db.query(User).filter_by(username=verify["username"]).first()
+    data = user._asdict()
+    del data["password"]
+    del data["id"]
+    logged_in_user = data
+    logged_in = logged_in_user["username"]
+    print("logged in", logged_in)
+    db.close()
+
+    # API CALL
     url = request.args.get("url")
     url = "https://api.shrtco.de/v2/shorten?url={}".format(url)
     url_api = requests.get(url)
     formatted_data = url_api.json()
     result_ = formatted_data["result"]
     current_time = datetime.datetime.now()
+    print(result_)
+
+    # MAKE A ENTRY TO UPDATE TO DATABASE
+    db = Session()
+    new_entry = UrlData(
+        originalurl=result_["original_link"],
+        shorturl=result_["short_link"],
+        date=current_time,
+        username=logged_in,
+    )
+
+    db.add(new_entry)
+    db.commit()
+    db.close()
+
     return {
         "success": True,
         "short_link": result_["short_link"],
-        "original_link": result_["original_link"],
-        "date": current_time,
+        "user": logged_in,
+        "message": "Link Created Successfully",
     }
 
 
