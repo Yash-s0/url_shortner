@@ -207,14 +207,14 @@ def get_entries():
     del data["id"]
     logged_in_user = data
     logged_in = logged_in_user["username"]
-    print("logged in as", logged_in)
+    # print("logged in as", logged_in)
+
     # USER LOGGED IN
 
     response = list()
     url_data = db.query(UrlData).filter_by(username=logged_in).all()
     for row in url_data:
         data = row._asdict()
-        print(data)
         del data["username"]
         del data["id"]
         response.append(data)
