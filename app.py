@@ -1,4 +1,5 @@
-from enum import unique
+from collections import defaultdict
+from unittest import result
 from flask import Flask
 from flask_restful import Api, request
 from sqlalchemy import create_engine, Column, Integer, String, inspect
@@ -8,7 +9,7 @@ from sqlalchemy.ext.declarative import as_declarative, declared_attr
 import jwt
 import datetime
 import requests
-
+from sqlalchemy.sql import select
 
 app = Flask(__name__)
 api = Api(app)
@@ -17,7 +18,7 @@ SECRET_KEY = "yashsecret"
 dbEngine = create_engine("sqlite:///data.db")
 Session = sessionmaker(bind=dbEngine)
 
-
+# ENCODING THE AUTHORIZATION TOKEN
 def encode_auth_token(user_id):
     payload = {
         "exp": datetime.datetime.utcnow() + datetime.timedelta(days=0, minutes=15),
@@ -27,6 +28,7 @@ def encode_auth_token(user_id):
     return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
 
 
+# DECODING THE AUTHORIZATION TOKEN
 def decode_auth_token(auth_token):
     try:
         payload = jwt.decode(auth_token, SECRET_KEY, algorithms=["HS256"])
@@ -63,6 +65,7 @@ class UrlData(Base):
     date = Column(String(100))
 
 
+# REGISTER NEW USER
 @app.get("/new-user")
 def register():
     args = request.json
@@ -87,6 +90,7 @@ def register():
     return {"success": True, "message": "Successfull register!"}
 
 
+# LOGIN USER
 @app.post("/login")
 def login():
     data = request.get_json()
@@ -109,6 +113,7 @@ def login():
     return {"succes": True, "bearer_token": bearer_token}
 
 
+# GET THE Authorization PROCESS DONE
 @app.get("/user-info")
 def user_info():
     token = request.headers.get("Authorization")
@@ -128,6 +133,7 @@ def user_info():
     return data
 
 
+# MAKE THE URL SHORT WITH API
 @app.route("/shorten-url")
 def get_data():
 
@@ -174,11 +180,42 @@ def get_data():
     db.close()
 
     return {
-        "success": True,
         "short_link": result_["short_link"],
         "user": logged_in,
         "message": "Link Created Successfully",
     }
+
+
+@app.route("/entries")
+def get_entries():
+
+    # AUTHENTICATE USER
+    token = request.headers.get("Authorization")
+    if token is None:
+        return {"success": False, "message": "Session expried, please login"}, 404
+
+    bearer_token = token.split("Bearer ")[1]
+    verify = decode_auth_token(bearer_token)
+    if "success" in verify and verify["success"] is False:
+        return verify
+
+    db = Session()
+    user = db.query(User).filter_by(username=verify["username"]).first()
+    data = user._asdict()
+    del data["password"]
+    del data["id"]
+    logged_in_user = data
+    logged_in = logged_in_user["username"]
+    print("logged in as", logged_in)
+    # USER LOGGED IN
+
+    response = list()
+    url_data = db.query(UrlData).filter_by(username=logged_in).all()
+    for row in url_data:
+        data = row._asdict()
+        response.append(data)
+
+    return response
 
 
 if __name__ == "__main__":
