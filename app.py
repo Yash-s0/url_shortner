@@ -1,6 +1,3 @@
-from collections import defaultdict
-from unittest import result
-from urllib import response
 from flask import Flask
 from flask_restful import Api, request
 from sqlalchemy import create_engine, Column, Integer, String, inspect
@@ -10,7 +7,6 @@ from sqlalchemy.ext.declarative import as_declarative, declared_attr
 import jwt
 import datetime
 import requests
-from sqlalchemy.sql import select
 
 app = Flask(__name__)
 api = Api(app)
