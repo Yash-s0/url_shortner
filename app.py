@@ -1,5 +1,6 @@
 from collections import defaultdict
 from unittest import result
+from urllib import response
 from flask import Flask
 from flask_restful import Api, request
 from sqlalchemy import create_engine, Column, Integer, String, inspect
@@ -21,7 +22,7 @@ Session = sessionmaker(bind=dbEngine)
 # ENCODING THE AUTHORIZATION TOKEN
 def encode_auth_token(user_id):
     payload = {
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(days=0, minutes=15),
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(days=0, minutes=35),
         "iat": datetime.datetime.utcnow(),
         "sub": user_id,
     }
@@ -213,6 +214,9 @@ def get_entries():
     url_data = db.query(UrlData).filter_by(username=logged_in).all()
     for row in url_data:
         data = row._asdict()
+        print(data)
+        del data["username"]
+        del data["id"]
         response.append(data)
 
     return response
