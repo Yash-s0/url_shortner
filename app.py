@@ -58,7 +58,7 @@ class UrlData(Base):
     id = Column(Integer, unique=True, primary_key=True)
     username = Column(String(200), unique=False, nullable=False)
     shorturl = Column(String(400))
-    originalurl = Column(String(700))
+    originalurl = Column(String(700), unique=True)
     date = Column(String(100))
 
 
