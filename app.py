@@ -152,10 +152,17 @@ def get_data():
     logged_in_user = data
     logged_in = logged_in_user["username"]
     print("logged in", logged_in)
-    db.close()
+    # db.close()
 
     # API CALL
     url = request.args.get("url")
+    print(url)
+    # url_verify_1 = list()
+    exists = db.query(db.query(UrlData).filter_by(originalurl=url).exists()).scalar()
+    print(exists)
+    if exists is True:
+        return {"message": "Used already searched for this URL."}
+
     url = "https://api.shrtco.de/v2/shorten?url={}".format(url)
     url_api = requests.get(url)
     formatted_data = url_api.json()
@@ -203,7 +210,6 @@ def get_entries():
     del data["id"]
     logged_in_user = data
     logged_in = logged_in_user["username"]
-    # print("logged in as", logged_in)
 
     # USER LOGGED IN
 
