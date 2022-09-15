@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 from flask_restful import Api, request
 from sqlalchemy import create_engine, Column, Integer, String, inspect
 from sqlalchemy.orm import sessionmaker
@@ -85,6 +85,7 @@ def register():
     db.close()
 
     return {"success": True, "message": "Successfull register!"}
+    # return render_template("index.html")
 
 
 # LOGIN USER
