@@ -1,15 +1,17 @@
-from flask import Flask, render_template
+from flask import Flask
 from flask_restful import Api, request
 from sqlalchemy import create_engine, Column, Integer, String, inspect
 from sqlalchemy.orm import sessionmaker
 from passlib.hash import sha256_crypt
 from sqlalchemy.ext.declarative import as_declarative, declared_attr
+from flask_cors import CORS
 import jwt
 import datetime
 import requests
 
 app = Flask(__name__)
 api = Api(app)
+CORS(app)
 SECRET_KEY = "yashsecret"
 
 dbEngine = create_engine("sqlite:///data.db")
@@ -18,7 +20,7 @@ Session = sessionmaker(bind=dbEngine)
 # ENCODING THE AUTHORIZATION TOKEN
 def encode_auth_token(user_id):
     payload = {
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(days=0, minutes=35),
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(days=0, hours=3),
         "iat": datetime.datetime.utcnow(),
         "sub": user_id,
     }
@@ -62,16 +64,21 @@ class UrlData(Base):
     date = Column(String(100))
 
 
+@app.get("/")
+def sayhello():
+    return {"message": "HEllo", "user": "yash"}
+
+
 # REGISTER NEW USER
-@app.get("/new-user")
+@app.post("/new-user")
 def register():
     args = request.json
     username = args.get("username")
     password = args.get("password")
-    hashed_pass = sha256_crypt.encrypt(password)
 
     if username is None or password is None:
         return {"success": False, "message": "Missing required params"}, 400
+    hashed_pass = sha256_crypt.encrypt(password)
     db = Session()
 
     user = db.query(User).filter_by(username=username).first()
@@ -85,7 +92,6 @@ def register():
     db.close()
 
     return {"success": True, "message": "Successfull register!"}
-    # return render_template("index.html")
 
 
 # LOGIN USER
@@ -132,7 +138,7 @@ def user_info():
 
 
 # MAKE THE URL SHORT WITH API
-@app.route("/shorten-url")
+@app.post("/shorten-url")
 def get_data():
 
     # AUTHENTICATE USER
