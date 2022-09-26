@@ -97,9 +97,9 @@ def register():
 # LOGIN USER
 @app.post("/login")
 def login():
-    data = request.get_json()
-    username = data["username"]
-    password = data["password"]
+    args = request.json
+    username = args.get("username")
+    password = args.get("password")
 
     db = Session()
     user = db.query(User).filter_by(username=username).first()
@@ -112,15 +112,18 @@ def login():
         return {"success": False, "message": "Wrong password."}
 
     bearer_token = encode_auth_token(user.username)
-    print(bearer_token)
+    # print(bearer_token)
     db.close()
-    return {"succes": True, "bearer_token": bearer_token}
+    return {"success": True, "bearer_token": bearer_token}
 
 
 # GET THE Authorization PROCESS DONE
-@app.get("/user-info")
+@app.post("/user-info")
 def user_info():
+    print(request.headers)
     token = request.headers.get("Authorization")
+    print(token)
+    # return {"succes": False}
     if token is None:
         return {"success": False, "message": "Session expried, please login"}, 404
 
@@ -197,11 +200,13 @@ def get_data():
     }
 
 
-@app.route("/entries")
+@app.post("/entries")
 def get_entries():
 
     # AUTHENTICATE USER
+    print(request.headers)
     token = request.headers.get("Authorization")
+    print(token)
     if token is None:
         return {"success": False, "message": "Session expried, please login"}, 404
 
