@@ -1,3 +1,4 @@
+from enum import unique
 from flask import Flask
 from flask_restful import Api, request
 from sqlalchemy import create_engine, Column, Integer, String, inspect
@@ -58,10 +59,12 @@ class User(Base):
 class UrlData(Base):
     __tablename__ = "urldata"
     id = Column(Integer, unique=True, primary_key=True)
-    username = Column(String(200), unique=False, nullable=False)
+    username = Column(String(200), nullable=False)
     shorturl = Column(String(400))
-    originalurl = Column(String(700), unique=True)
+    originalurl = Column(String(700))
     date = Column(String(100))
+    # __tableargs__  =
+    unique = username, originalurl
 
 
 @app.get("/")
@@ -91,7 +94,7 @@ def register():
     db.commit()
     db.close()
 
-    return {"success": True, "message": "Successfull register!"}
+    return {"success": True, "message": "Successfully registerd!"}
 
 
 # LOGIN USER
@@ -168,14 +171,17 @@ def get_data():
     url = request.args.get("url")
     print(url)
     # url_verify_1 = list()
-    exists = db.query(db.query(UrlData).filter_by(originalurl=url).exists()).scalar()
+    exists = db.query(
+        db.query(UrlData).filter_by(originalurl=url, username=logged_in).exists()
+    ).scalar()
     print(exists)
     if exists is True:
-        return {"message": "Used already searched for this URL."}
+        return {"message": "User already searched for this URL."}
 
     url = "https://api.shrtco.de/v2/shorten?url={}".format(url)
     url_api = requests.get(url)
     formatted_data = url_api.json()
+    print(formatted_data)
     result_ = formatted_data["result"]
     current_time = datetime.datetime.now()
     print(result_)
@@ -230,6 +236,7 @@ def get_entries():
     for row in url_data:
         data = row._asdict()
         del data["username"]
+        del data["date"]
         del data["id"]
         response.append(data)
 
