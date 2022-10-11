@@ -79,7 +79,7 @@ def register():
     username = args.get("username")
     password = args.get("password")
 
-    if username is "" or password is "":
+    if username is None or password is None:
         return {"success": False, "message": "Missing required params"}, 400
     hashed_pass = sha256_crypt.encrypt(password)
     db = Session()
