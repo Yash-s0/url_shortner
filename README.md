@@ -6,29 +6,29 @@ _____
 
 - Clone the Repo.
     ```
-        $ git clone https://github.com/Yash-s0/url_shortner.git
+    git clone https://github.com/Yash-s0/url_shortner.git
     ```
 - Change Directory
     ```
-        $ cd url_shortner
+    cd url_shortner
     ```
 - Create env
     ```
-        $ python3 -m venv env
+    python3 -m venv env
     ```
 - Activate env
     ```
-        $ source env/bin/activate
+    source env/bin/activate
     ```
 - Install required packages modules
     ``` 
-        $ pip install -r requirements.txt
+    pip install -r requirements.txt
     ```
     `You are all set to run server for python file`
     
 - Now, Run the file
     ``` 
-        $ python3 app.py
+    python3 app.py
     ```
 ___
     
